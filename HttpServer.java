@@ -16,6 +16,7 @@ public class HttpServer {
 
             while (true) {
                 try (Socket clientSocket = serverSocket.accept()) {
+                    System.out.println("Nouvelle connexion : " + clientSocket.getInetAddress());
                     handleRequest(clientSocket);
                 } catch (Exception e) {
                     System.err.println("Erreur lors du traitement de la requête : " + e.getMessage());
@@ -38,6 +39,7 @@ public class HttpServer {
                 }
 
                 File file = new File(BASE_DIR + filePath);
+                System.out.println("Requested file: " + file.getAbsolutePath());
                 if (file.exists() && !file.isDirectory()) {
                     byte[] fileContent = new byte[(int) file.length()];
                     try (FileInputStream fis = new FileInputStream(file)) {
@@ -46,11 +48,14 @@ public class HttpServer {
 
                     out.write("HTTP/1.1 200 OK\r\n".getBytes());
                     out.write("Content-Type: text/html\r\n".getBytes());
-                    out.write(("Content-Length: " + fileContent.length + "\r\n".getBytes()).getBytes());
+                    out.write(("Content-Length: " + fileContent.length + "\r\n").getBytes());
                     out.write("\r\n".getBytes());
+
                     out.write(fileContent);
+                    out.flush();
                 } else {
-                    String response = "HTTP/1.1 404 Not Found\r\n\r\n<h1>404 Not Found</h1>";
+                    String response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>404 Not Found</h1>";
+                    System.out.println("File not found, delivering 404 response");
                     out.write(response.getBytes());
                 }
             }

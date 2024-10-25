@@ -46,8 +46,15 @@ public class HttpServer {
                         fis.read(fileContent);
                     }
 
+                    String contentType = "text/html";
+                    if (filePath.endsWith(".css")) {
+                        contentType = "text/css";
+                    } else if (filePath.endsWith(".ico")) {
+                        contentType = "image/x-icon";
+                    }
+
                     out.write("HTTP/1.1 200 OK\r\n".getBytes());
-                    out.write("Content-Type: text/html\r\n".getBytes());
+                    out.write(("Content-Type: " + contentType + "\r\n").getBytes());
                     out.write(("Content-Length: " + fileContent.length + "\r\n").getBytes());
                     out.write("\r\n".getBytes());
 
@@ -63,4 +70,5 @@ public class HttpServer {
             e.printStackTrace();
         }
     }
+
 }

@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +33,6 @@ public class HttpServer {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Serveur démarré sur le port " + PORT);
 
-            // Boucle "infini" pour accepter une connexion
             while (true) {
                 try (Socket clientSocket = serverSocket.accept()) {
                     System.out.println("Nouvelle connexion : " + clientSocket.getInetAddress());
@@ -50,21 +50,19 @@ public class HttpServer {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
              OutputStream out = clientSocket.getOutputStream()) {
 
-            // Lire la requête brute
             StringBuilder rawRequest = new StringBuilder();
             String line;
             while ((line = in.readLine()) != null && !line.isEmpty()) {
                 rawRequest.append(line).append("\r\n");
             }
-            rawRequest.append("\r\n"); // Ajouter la ligne vide
+            rawRequest.append("\r\n");
             String request = rawRequest.toString();
 
             System.out.println("Requête brute reçue :\n" + request);
 
-            // Extraire la ligne de méthode (première ligne)
             String requestLine = request.split("\r\n")[0];
 
-            // Gérer les cas où ce n'est pas un GET
+            // Vérification de la méthode GET
             if (!requestLine.startsWith("GET ")) {
                 out.write(generateResponse(405, "405 Method Not Allowed").getBytes());
                 return;
@@ -76,14 +74,11 @@ public class HttpServer {
                 return;
             }
 
-            // Extraire le chemin demandé
-            String filePath = requestLine.split(" ")[1];
-            if (filePath.equals("/")) {
-                filePath = "/index.html";
-            }
+            // Construire le chemin du fichier demandé
+            String filePath = constructPath(requestLine.split(" ")[1]);
 
             // Récupérer et afficher le contenu demandé
-            File file = new File(BASE_DIR + filePath);
+            File file = new File(filePath);
             if (file.exists() && !file.isDirectory()) {
                 byte[] fileContent = new byte[(int) file.length()];
                 try (FileInputStream fis = new FileInputStream(file)) {
@@ -99,11 +94,28 @@ public class HttpServer {
             }
         } catch (Exception e) {
             try (OutputStream out = clientSocket.getOutputStream()) {
-                out.write(generateResponse(500, "<h1>500 Internal Server Error</h1>").getBytes());
+                out.write(generateResponse(500, "500 Internal Server Error").getBytes());
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
         }
+    }
+
+    // Méthode pour construire le chemin absolu
+    private static String constructPath(String requestedPath) throws Exception {
+        // Nettoyer les paramètres après "?" et décoder les caractères encodés
+        String cleanPath = requestedPath.split("\\?")[0];
+        cleanPath = URLDecoder.decode(cleanPath, "UTF-8");
+
+        // Construire le chemin absolu
+        File file = new File(BASE_DIR + cleanPath);
+
+        // Si c'est un répertoire, ajouter index.html
+        if (file.isDirectory()) {
+            file = new File(file, "index.html");
+        }
+
+        return file.getAbsolutePath();
     }
 
     private static String generateResponse(int statusCode, String body) {

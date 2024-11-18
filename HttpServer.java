@@ -9,6 +9,7 @@ import java.net.Socket;
 public class HttpServer {
     private static final int PORT = 8080;
     private static final String BASE_DIR = "Site";
+    private static final String REGEX_METHODE_GET = "^GET\\s+/\\S*\\s+HTTP/(1\\.0|1\\.1)\\r\\n(?:Host:\\s[^\\r\\n]+\\r\\n)?\\r\\n$";
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -34,6 +35,13 @@ public class HttpServer {
 
             String requestLine = in.readLine();
             if (requestLine != null && requestLine.startsWith("GET")) {
+                if (!requestLine.matches(REGEX_METHODE_GET)) {
+                    String response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n<h1>400 Bad Request</h1>";
+                    System.out.println("Bad request, delivering 400 response");
+                    out.write(response.getBytes());
+                    return;
+                }
+
                 String filePath = requestLine.split(" ")[1];
                 if (filePath.equals("/")) {
                     filePath = "/index.html";
@@ -66,10 +74,13 @@ public class HttpServer {
                     System.out.println("File not found, delivering 404 response");
                     out.write(response.getBytes());
                 }
+            } else {
+                String response = "HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/html\r\n\r\n<h1>405 Method Not Allowed</h1>";
+                System.out.println("Method not allowed, delivering 405 response");
+                out.write(response.getBytes());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
 }

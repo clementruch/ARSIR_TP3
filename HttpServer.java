@@ -14,6 +14,7 @@ public class HttpServer {
     private static final Pattern REGEX_METHODE_GET = Pattern.compile("^GET\\s+/\\S*\\s+HTTP/(1\\.0|1\\.1)\\r\\nHost:\\s[^\r\n]+\\r\\n(?:[^\r\n]+\\r\\n)*\\r\\n$", Pattern.CASE_INSENSITIVE);
 
 
+
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Serveur démarré sur le port " + PORT);
@@ -46,6 +47,14 @@ public class HttpServer {
             String request = rawRequest.toString();
 
             System.out.println("Requête brute reçue :\n" + request);
+
+            // Valider la présence de Host: localhost:8080
+            if (!request.contains("Host: localhost:8080")) {
+                String response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n<h1>400 Bad Request</h1>";
+                System.out.println("Host invalide : réponse 400 envoyée.");
+                out.write(response.getBytes());
+                return;
+            }
 
             // Extraire la ligne de méthode (première ligne)
             String requestLine = request.split("\r\n")[0];

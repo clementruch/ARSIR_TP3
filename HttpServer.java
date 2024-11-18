@@ -10,11 +10,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class HttpServer {
     private static final int PORT = 8080;
     private static final String BASE_DIR = "Site";
     private static final Map<Integer, String> STATUS_MESSAGES = new HashMap<>();
+
+    private static final Pattern REGEX_METHODE_GET = Pattern.compile("^GET\\s+/\\S*\\s+HTTP/(1\\.0|1\\.1)\\r\\nHost:\\s[^\r\n]+\\r\\n(?:[^\r\n]+\\r\\n)*\\r\\n$", Pattern.CASE_INSENSITIVE);
 
     static {
         STATUS_MESSAGES.put(200, "OK");
@@ -28,6 +32,7 @@ public class HttpServer {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Serveur démarré sur le port " + PORT);
 
+            // Boucle "infini" pour accepter une connexion
             while (true) {
                 try (Socket clientSocket = serverSocket.accept()) {
                     System.out.println("Nouvelle connexion : " + clientSocket.getInetAddress());
@@ -45,45 +50,56 @@ public class HttpServer {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
              OutputStream out = clientSocket.getOutputStream()) {
 
+            // Lire la requête brute
             StringBuilder rawRequest = new StringBuilder();
             String line;
             while ((line = in.readLine()) != null && !line.isEmpty()) {
                 rawRequest.append(line).append("\r\n");
             }
-            rawRequest.append("\r\n");
+            rawRequest.append("\r\n"); // Ajouter la ligne vide
             String request = rawRequest.toString();
 
             System.out.println("Requête brute reçue :\n" + request);
 
+            // Extraire la ligne de méthode (première ligne)
             String requestLine = request.split("\r\n")[0];
+
+            // Gérer les cas où ce n'est pas un GET
             if (!requestLine.startsWith("GET ")) {
-                String response = generateResponse(405, "<h1>405 Method Not Allowed</h1>");
-                out.write(response.getBytes());
+                out.write(generateResponse(405, "405 Method Not Allowed").getBytes());
                 return;
             }
 
+            Matcher matcher = REGEX_METHODE_GET.matcher(request);
+            if (!matcher.matches()) {
+                out.write(generateResponse(400, "400 Bad Request").getBytes());
+                return;
+            }
+
+            // Extraire le chemin demandé
             String filePath = requestLine.split(" ")[1];
             if (filePath.equals("/")) {
                 filePath = "/index.html";
             }
 
+            // Récupérer et afficher le contenu demandé
             File file = new File(BASE_DIR + filePath);
             if (file.exists() && !file.isDirectory()) {
                 byte[] fileContent = new byte[(int) file.length()];
                 try (FileInputStream fis = new FileInputStream(file)) {
                     fis.read(fileContent);
                 }
+
                 String header = generateResponseHeader(200, fileContent.length, "text/html");
                 out.write(header.getBytes());
                 out.write(fileContent);
+                out.flush();
             } else {
-                String response = generateResponse(404, "<h1>404 Not Found</h1>");
-                out.write(response.getBytes());
+                out.write(generateResponse(404, "<h1>404 Not Found</h1>").getBytes());
             }
         } catch (Exception e) {
             try (OutputStream out = clientSocket.getOutputStream()) {
-                String response = generateResponse(500, "<h1>500 Internal Server Error</h1>");
-                out.write(response.getBytes());
+                out.write(generateResponse(500, "<h1>500 Internal Server Error</h1>").getBytes());
             } catch (Exception ex) {
                 ex.printStackTrace();
             }

@@ -9,7 +9,8 @@ import java.net.Socket;
 public class HttpServer {
     private static final int PORT = 8080;
     private static final String BASE_DIR = "Site";
-    private static final String REGEX_METHODE_GET = "^GET\\s+/\\S*\\s+HTTP/(1\\.0|1\\.1)\\r\\n(?:Host:\\s[^\\r\\n]+\\r\\n)?\\r\\n$";
+    private static final String REGEX_METHODE_GET = "^GET\\s+/\\S*\\s+HTTP/(1\\.0|1\\.1)\\r\\nHost:\\s[^\\r\\n]+\\r\\n\\r\\n$";
+
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {

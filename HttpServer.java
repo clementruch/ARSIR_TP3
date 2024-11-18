@@ -104,7 +104,7 @@ public class HttpServer {
         header.append("HTTP/1.1 ").append(statusCode).append(" ").append(statusMessage).append("\r\n");
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        dateFormat.setTimeZone(TimeZone.getTimeZone("CET"));
         header.append("Date: ").append(dateFormat.format(new Date())).append("\r\n");
 
         header.append("Server: FisaServer\r\n");

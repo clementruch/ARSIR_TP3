@@ -14,12 +14,13 @@ public class HttpServer {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Serveur démarré sur le port " + PORT);
 
+            // Boucle "infini" pour accepter une connexion
             while (true) {
                 try (Socket clientSocket = serverSocket.accept()) {
                     System.out.println("Nouvelle connexion : " + clientSocket.getInetAddress());
                     handleRequest(clientSocket);
                 } catch (Exception e) {
-                    System.err.println("Erreur lors du traitement de la requête : " + e.getMessage());
+                    System.err.println("Erreur : " + e.getMessage());
                 }
             }
         } catch (Exception e) {

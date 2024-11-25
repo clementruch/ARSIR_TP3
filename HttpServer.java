@@ -16,10 +16,8 @@ import java.util.regex.Matcher;
 
 public class HttpServer {
     private static final int PORT = 8080;
-    //private static final String BASE_DIR = "Site";
     private static final Map<String, String> HOST_TO_BASE_DIR = new HashMap<>();
     private static final Map<Integer, String> STATUS_MESSAGES = new HashMap<>();
-
     private static final Pattern REGEX_METHODE_GET = Pattern.compile("^GET\\s+/\\S*\\s+HTTP/(1\\.0|1\\.1)\\r\\nHost:\\s[^\r\n]+\\r\\n(?:[^\r\n]+\\r\\n)*\\r\\n$", Pattern.CASE_INSENSITIVE);
 
     static {
@@ -51,8 +49,7 @@ public class HttpServer {
     }
 
     private static void handleRequest(Socket clientSocket) {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-             OutputStream out = clientSocket.getOutputStream()) {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); OutputStream out = clientSocket.getOutputStream()) {
 
             StringBuilder rawRequest = new StringBuilder();
             String line;
@@ -78,18 +75,14 @@ public class HttpServer {
                 return;
             }
 
-            String hostHeader = request.lines()
-                    .filter(hostLine -> hostLine.startsWith("Host:"))
-                    .map(hostLine -> hostLine.replace("Host: ", "").split(":")[0]) // On récupère le nom du Host
-                    .findFirst()
-                    .orElse(null);
+            String hostHeader = request.lines().filter(hostLine -> hostLine.startsWith("Host:")).map(hostLine -> hostLine.replace("Host: ", "").split(":")[0]) // On récupère le nom du Host
+                    .findFirst().orElse(null);
 
             if (hostHeader == null || !HOST_TO_BASE_DIR.containsKey(hostHeader)) {
                 out.write(generateResponse(404, "404 Not Found").getBytes());
                 return;
             }
 
-            // Construire le chemin du fichier demandé
             String filePath = constructPath(requestLine.split(" ")[1], hostHeader);
 
             // Récupérer et afficher le contenu demandé
@@ -116,7 +109,6 @@ public class HttpServer {
         }
     }
 
-    // Méthode pour construire le chemin absolu
     private static String constructPath(String requestedPath, String hostHeader) throws Exception {
         // Nettoyer les paramètres après "?" et décoder les caractères encodés
         String cleanPath = requestedPath.split("\\?")[0];
